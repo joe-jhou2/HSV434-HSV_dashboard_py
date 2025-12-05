@@ -2,13 +2,8 @@
 FROM python:3.10-slim
 
 # 1. Install System Dependencies
-# We added:
-# - libhdf5-dev: Required for Seurat (hdf5r)
-# - libglpk-dev: Required for Seurat (igraph)
-# - libharfbuzz-dev, libfribidi-dev: Required for text shaping (ragg/systemfonts)
-# - libfontconfig1-dev: Required for svglite
-# - libjpeg-dev, libpng-dev: Image processing
-# - cmake: Required for building arrow
+# Added: libdeflate-dev, liblzma-dev, libzstd-dev, libbz2-dev, libtirpc-dev
+# These are required to compile rpy2 against the R runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     r-base \
     build-essential \
@@ -27,6 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     cmake \
     git \
+    libdeflate-dev \
+    liblzma-dev \
+    libzstd-dev \
+    libbz2-dev \
+    libtirpc-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Set working directory
@@ -38,12 +38,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 4. Install R Dependencies (Split into steps to prevent memory crashes)
 
-# Step 4A: Install BiocManager and Bioconductor packages (ComplexHeatmap)
+# Step 4A: Install BiocManager and Bioconductor packages
 RUN R -e "install.packages('BiocManager', repos='http://cran.rstudio.com/'); \
           BiocManager::install('ComplexHeatmap', ask=FALSE, update=FALSE)"
 
-# Step 4B: Install Heavy CRAN Packages (Seurat, Arrow) separately
-# We define NOT_CRAN=true for Arrow to allow it to download pre-compiled binaries (much faster)
+# Step 4B: Install Heavy CRAN Packages (Seurat, Arrow)
 RUN R -e "Sys.setenv(NOT_CRAN='true'); install.packages(c('arrow', 'Seurat'), repos='http://cran.rstudio.com/')"
 
 # Step 4C: Install Remaining Visualization & Utility Packages
