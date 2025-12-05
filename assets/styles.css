@@ -1,0 +1,222 @@
+/* Container for the introduction text */
+.intro-container {
+  padding: 2%;
+  margin-bottom: 60px; /* Ensure space above footer */
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 1200px) {
+  .signup-panel {
+    height: 70vh;
+  }
+  .well-panel {
+    max-height: 50vh;
+  }
+}
+
+@media (max-width: 992px) {
+  .signup-panel {
+    height: 60vh;
+  }
+  .well-panel {
+    max-height: 40vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .signup-panel {
+    height: 50vh;
+  }
+  .well-panel {
+    max-height: 30vh;
+  }
+}
+
+@media (max-width: 576px) {
+  .signup-panel {
+    height: 40vh;
+  }
+  .well-panel {
+    max-height: 20vh;
+  }
+}
+
+/* Container for the WorkFlow image */
+.WorkFlow-image {
+  text-align: center;  /* Center the image */
+  margin-top: 10px;    /* Adjust margin as needed */
+}
+
+.WorkFlow-image img {
+  max-width: 100%;
+  height: auto;   /* Use auto for responsive height */
+}
+
+/* Virus image top-right corner */
+.Virus-image {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  text-align: right;
+}
+
+.Virus-image img {
+  height: 80px;
+  width: auto;
+}
+
+/* FHCRC image top-left corner */
+.FHCRC-image {
+  position: absolute;
+  top: 5px;
+  left: 10px;
+}
+
+.FHCRC-image img {
+  height: 80px;
+  width: auto;
+}
+
+/* Visium image center */
+.visium-image {
+  text-align: center;  /* Center the image */
+  margin-top: 10px; 
+}
+
+.visium-image img {
+  height: auto;
+  width: 1500px;
+}
+/* Ensure body allows absolute positioning */
+body {
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* Annotation container */
+.annotation-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.annotation-description {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Style for actionButton with hover effect */
+#goToMain {
+  cursor: pointer;
+  z-index: 10000; /* Ensure it's on top of other elements */
+  display: inline-block;
+  margin: 10px auto;
+  padding: 12px 24px;
+}
+
+#goToMain:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+/* Enlarge font size for the scRNAseq tab */
+.scRNAseq-tab-label {
+    font-size: 22px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+/* Enlarge font size for the Visium tab */
+.Visium-tab-label {
+    font-size: 22px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+/* Enlarge font size for the Cluster Discovery tab */
+.Cluster-tab-label {  
+    font-size: 20px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+/* Enlarge font size for the Gene Discovery tab */
+.Gene-tab-label {  
+    font-size: 20px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+/* Enlarge font size for the Spatial Gene tab */
+.Spatial-gene-tab-label {  
+    font-size: 20px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+} 
+
+/* Enlarge font size for the Deconv tab */
+.Deconv-tab-label {  
+    font-size: 20px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+} 
+
+/* Enlarge font size for the subset tab */
+.umap-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+} 
+
+/* Enlarge font size for the subset tab */
+.stats-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+} 
+
+.subject-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+} 
+
+/* Enlarge font size for the marker gene tab */
+.feature-umap-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+.heatmap-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+.vln-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}
+
+.dot-sub-tab {  
+    font-size: 18px !important;  /* adjust size as needed */
+    font-weight: bold;            /* optional, make it bold */
+    padding-top: 1px !important;          /* Reduced top padding */
+    padding-bottom: 1px !important;       /* Reduced bottom padding */
+}

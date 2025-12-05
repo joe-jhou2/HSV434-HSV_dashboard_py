@@ -1,0 +1,34 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+hsvdashboard_py_env/
+.DS_Store
+
+# --- R ---
+.Rhistory
+.RData
+.Ruserdata
+
+# --- Data ---
+DataWarehouse/
+*.parquet
+*.Rdata
+*.rds
+*.csv
+*.json
+
+DataLake/
+*.parquet
+*.Rdata
+*.rds
+*.csv
+*.json
+
+# --- Temporary/Generated Files ---
+*.png
+assets/temp_*.png
+temp_*.png
