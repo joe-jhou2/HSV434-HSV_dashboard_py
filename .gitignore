@@ -32,3 +32,4 @@ DataLake/
 *.png
 assets/temp_*.png
 temp_*.png
+.gitignore
