@@ -33,3 +33,10 @@ DataLake/
 assets/temp_*.png
 temp_*.png
 .gitignore
+
+# --- Exceptions ---
+!assets/images/demo1.png
+!assets/images/demo3.png
+!assets/images/demo5.png
+!assets/images/demo7.png
+!assets/images/Work_Flow.png

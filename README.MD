@@ -2,7 +2,7 @@
 
 **By: Joe Hou**
 
-![Workflow](www/images/Work_Flow_ver2.png)
+![Workflow](assets/images/Work_Flow_ver2.png)
 
 ## Overview
 
