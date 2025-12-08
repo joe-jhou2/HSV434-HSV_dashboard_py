@@ -48,7 +48,7 @@ if (!interactive()) {
       seurat_obj_name <- paste0(base_name, obj_suffix)
 
       if (!file.exists(seurat_rdata)) {
-        cat(paste("❌ ERROR: Input RData not found for",
+        cat(paste("ERROR: Input RData not found for",
                   prefix, "at", seurat_rdata, "\n"))
         next
       }
@@ -61,9 +61,9 @@ if (!interactive()) {
           genes_to_extract = ds$genes
         )
       }, error = function(e) {
-        cat(paste("❌ ERROR processing", prefix, ":", e$message, "\n"))
+        cat(paste("ERROR processing", prefix, ":", e$message, "\n"))
       })
     }
-    cat("✅ All defined datasets processed.\n")
+    cat("All defined datasets processed.\n")
   }
 }

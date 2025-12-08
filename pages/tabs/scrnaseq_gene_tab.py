@@ -51,7 +51,7 @@ def get_available_gene_universe(dataset_prefix, bucket_name=None, force_s3=False
         bucket_name = os.getenv("S3_BUCKET_URI")
     
     if not bucket_name:
-        print("❌ Error: S3_BUCKET_URI not set in .env or passed as argument.")
+        print("Error: S3_BUCKET_URI not set in .env or passed as argument.")
         return []
     
     # 2. Construct paths
@@ -60,7 +60,7 @@ def get_available_gene_universe(dataset_prefix, bucket_name=None, force_s3=False
 
     # 3. Check Local File (Only if force_s3 is False)
     if not force_s3 and os.path.exists(local_path):
-        print(f"📂 Loading from LOCAL: {local_path}")
+        print(f"Loading from LOCAL: {local_path}")
         with open(local_path, "r") as f:
             return json.load(f)
 
@@ -70,13 +70,13 @@ def get_available_gene_universe(dataset_prefix, bucket_name=None, force_s3=False
         if bucket_name.startswith("s3://"):
             bucket_name = urlparse(bucket_name).netloc
 
-        print(f"☁️ Loading from S3: {bucket_name}/{s3_key}")
+        print(f"Loading from S3: {bucket_name}/{s3_key}")
         
         obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
         return json.loads(obj["Body"].read().decode('utf-8'))
 
     except Exception as e:
-        print(f"❌ Error loading from S3: {e}")
+        print(f"Error loading from S3: {e}")
         return []
     
 # --- DATA LOADING HELPERS --- 
@@ -91,7 +91,7 @@ def get_dataset_options(dataset_prefix, bucket_name=None, force_s3=False):
         bucket_name = os.getenv("S3_BUCKET_URI")
     
     if not bucket_name:
-        print("❌ Error: S3_BUCKET_URI not set")
+        print("Error: S3_BUCKET_URI not set")
         return {"clusters": [], "subjects": []}
     
     # 2. Construct paths
@@ -110,7 +110,7 @@ def get_dataset_options(dataset_prefix, bucket_name=None, force_s3=False):
             if bucket_name.startswith("s3://"):
                 bucket_name = urlparse(bucket_name).netloc
 
-            print(f"☁️ Loading from S3: {bucket_name}/{s3_key}")
+            print(f"Loading from S3: {bucket_name}/{s3_key}")
             
             obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
             df = pd.read_parquet(BytesIO(obj['Body'].read())) 
@@ -124,7 +124,7 @@ def get_dataset_options(dataset_prefix, bucket_name=None, force_s3=False):
             return OPTIONS_CACHE[dataset_prefix]
         
     except FileNotFoundError as e:
-            print(f"❌ Error loading dataset options for {dataset_prefix}: {e}")
+            print(f"Error loading dataset options for {dataset_prefix}: {e}")
             return {"clusters": [], "subjects": []}
     
     return OPTIONS_CACHE[dataset_prefix]
@@ -140,7 +140,7 @@ def get_gene_list(dataset_prefix, bucket_name=None, force_s3=False):
         bucket_name = os.getenv("S3_BUCKET_URI")
     
     if not bucket_name:
-        print("❌ Error: S3_BUCKET_URI not set")
+        print("Error: S3_BUCKET_URI not set")
         return {"clusters": [], "subjects": []}
     
     # 3. Construct paths
@@ -160,7 +160,7 @@ def get_gene_list(dataset_prefix, bucket_name=None, force_s3=False):
                 if bucket_name.startswith("s3://"):
                     bucket_name = urlparse(bucket_name).netloc
 
-                print(f"☁️ Loading from S3: {bucket_name}/{s3_key}")
+                print(f"Loading from S3: {bucket_name}/{s3_key}")
                 obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
                 data = json.loads(obj["Body"].read().decode('utf-8'))
             
@@ -169,7 +169,7 @@ def get_gene_list(dataset_prefix, bucket_name=None, force_s3=False):
             GENE_LIST_CACHE[dataset_prefix] = data
             return data
     except Exception as e:
-        print(f"❌ Error loading gene list for {dataset_prefix}: {e}")
+        print(f"Error loading gene list for {dataset_prefix}: {e}")
         return []
     return []
 
@@ -189,7 +189,7 @@ def check_genes_availability(dataset_prefix, genes, bucket_name=None, force_s3=F
 
     # 3. Handle case where list is completely missing (empty)
     if not available_genes:
-        print(f"⚠️ Gene index not found for {dataset_prefix}. Treating all as missing.")
+        print(f"Gene index not found for {dataset_prefix}. Treating all as missing.")
         return [], genes
 
     # 4. Calculate Delta (Found vs Missing)
@@ -224,7 +224,7 @@ def run_precompute_r_async(dataset_prefix, genes_to_extract):
 
     key = (dataset_prefix, tuple(sorted(genes_to_extract)))
     if key in JOBS_IN_PROGRESS:
-        log_progress(f"⏩ Background R job already running for {dataset_prefix}: {genes_to_extract}")
+        log_progress(f"Background R job already running for {dataset_prefix}: {genes_to_extract}")
         return
 
     JOBS_IN_PROGRESS.add(key)
@@ -234,7 +234,7 @@ def run_precompute_r_async(dataset_prefix, genes_to_extract):
     env["EXTRACT_PREFIX"] = dataset_prefix
     env["EXTRACT_GENES"] = ",".join(genes_to_extract)
 
-    log_progress(f"🚀 Launching async R process for dataset '{dataset_prefix}' to pull genes: {genes_to_extract}")
+    log_progress(f"Launching async R process for dataset '{dataset_prefix}' to pull genes: {genes_to_extract}")
     try:
         process = subprocess.Popen(
             ["Rscript", r_script_path, "--vanilla"],
@@ -244,9 +244,9 @@ def run_precompute_r_async(dataset_prefix, genes_to_extract):
             text=True
         )
 
-        log_progress(f"🧠 PID {process.pid} started. Monitoring in background...")
+        log_progress(f"PID {process.pid} started. Monitoring in background...")
 
-        # Optional: small background watcher to log progress
+        # background watcher to log progress
         import threading
 
         def monitor_process(proc, job_key):
@@ -259,7 +259,7 @@ def run_precompute_r_async(dataset_prefix, genes_to_extract):
                         log_progress(f"[R stderr] {err_line.strip()}")
                 proc.wait()
                 if proc.returncode == 0:
-                    log_progress(f"✅ R job completed successfully for {dataset_prefix}: {genes_to_extract}")
+                    log_progress(f"R job completed successfully for {dataset_prefix}: {genes_to_extract}")
 
                     if dataset_prefix in GENE_LIST_CACHE:
                         del GENE_LIST_CACHE[dataset_prefix]
@@ -267,17 +267,17 @@ def run_precompute_r_async(dataset_prefix, genes_to_extract):
 
                     set_refresh_flag(dataset_prefix, "ready") 
                 else:
-                    log_progress(f"❌ R job exited with code {proc.returncode} for {dataset_prefix}")
+                    log_progress(f"R job exited with code {proc.returncode} for {dataset_prefix}")
             except Exception as e:
-                log_progress(f"⚠️ Error monitoring R process: {e}")
+                log_progress(f"Error monitoring R process: {e}")
             finally:
                 JOBS_IN_PROGRESS.discard(job_key)
-                log_progress(f"🔚 Job key {job_key} removed from in-progress list.")
+                log_progress(f"Job key {job_key} removed from in-progress list.")
 
         threading.Thread(target=monitor_process, args=(process, key), daemon=True).start()
 
     except Exception as e:
-        log_progress(f"💥 Failed to launch async R job: {e}")
+        log_progress(f"Failed to launch async R job: {e}")
         JOBS_IN_PROGRESS.discard(key)
 
 # --- Layout Definition ---
@@ -418,7 +418,7 @@ def register_callbacks(app):
         valid_gene_universe = set(get_available_gene_universe(dataset_prefix, bucket_name=None, force_s3=True))
         if not valid_gene_universe:
             return "", "", "", "", (
-                f"⚠️ No available gene list found for {dataset_prefix}. "
+                f"No available gene list found for {dataset_prefix}. "
                 "Please generate it first using export_available_genes.R."
             ), True
 
@@ -426,13 +426,13 @@ def register_callbacks(app):
         valid_genes = [g for g in requested_genes if g in valid_gene_universe]
 
         if invalid_genes:
-            msg_invalid = f"⚠️ Unrecognized genes ignored: {', '.join(invalid_genes)}"
+            msg_invalid = f"Unrecognized genes ignored: {', '.join(invalid_genes)}"
             return "", "", "", "", f"{msg_invalid}\n. Please check input.", True
         else:
             msg_invalid = ""
 
         if not valid_genes:
-            return "", "", "", "", f"{msg_invalid}\n❌ No valid genes to visualize. Please check input.", True
+            return "", "", "", "", f"{msg_invalid}\n No valid genes to visualize. Please check input.", True
 
         # Continue downstream only with valid genes
         requested_genes = valid_genes
@@ -448,19 +448,19 @@ def register_callbacks(app):
         
         # --- Step 2: Handle missing genes ---
         if missing_genes:
-            log_progress(f"🧬 Genes missing: {missing_genes}")
+            log_progress(f"Genes missing: {missing_genes}")
             set_refresh_flag(dataset_prefix, "running")
             run_precompute_r_async(dataset_prefix, missing_genes)
 
             if not genes_available:
                 log_progress("🧊 No local genes available; skipping immediate plot generation.")
     
-                # Show a simple placeholder (e.g., blank plot or cluster outline)
-                placeholder_path = "/assets/images/HSV.png"  # or an existing static image
+                # Show a simple placeholder
+                placeholder_path = "/assets/images/HSV.png"
                 placeholder_src = f"/{placeholder_path}" if os.path.exists(placeholder_path) else ""
 
                 notification_msg = (
-                    f"⏳ Retrieving {len(missing_genes)} missing genes "
+                    f"Retrieving {len(missing_genes)} missing genes "
                     f"({', '.join(missing_genes)}) from DataLake... "
                     "Plots will refresh automatically when ready."
                 )
@@ -470,12 +470,12 @@ def register_callbacks(app):
                 set_refresh_flag(dataset_prefix, "running")
                 run_precompute_r_async(dataset_prefix, missing_genes)
 
-                log_progress("🧵 Background retrieval started; UI stays interactive.")
+                log_progress("Background retrieval started; UI stays interactive.")
                 return placeholder_src, placeholder_src, placeholder_src, placeholder_src, notification_msg, notification_open
 
             # Partial case (some missing, some available)
             notification_msg = (
-                    f"🧠 Fetching {len(missing_genes)} missing gene(s): {', '.join(missing_genes)}. "
+                    f"Fetching {len(missing_genes)} missing gene(s): {', '.join(missing_genes)}. "
                     "Plots will auto-refresh once retrieval completes."
                 )
             notification_open = True
@@ -513,7 +513,7 @@ def register_callbacks(app):
                 dot_src, _ = generate_dot_plot_from_df(data_pert, data_gex, color_map, genes_available, clusters_to_filter)
                 
             except Exception as e:
-                log_progress(f"❌ Error generating plots: {e}")
+                log_progress(f"Error generating plots: {e}")
                 umap_src = "/assets/images/HSV.png"
                 heatmap_src = "/assets/images/HSV.png"
                 violin_src = "/assets/images/HSV.png"
@@ -554,12 +554,12 @@ def register_callbacks(app):
         if get_refresh_flag(dataset_prefix) != "ready":
             raise dash.exceptions.PreventUpdate
 
-        log_progress(f"🔁 Auto-refresh triggered for {dataset_prefix}")
+        log_progress(f"Auto-refresh triggered for {dataset_prefix}")
 
         # rebuild gene list fresh, not from stale callback state
         requested_genes = build_ordered_gene_list(selected_genes, typed_genes)
 
-        # re-check availability (JSON got updated by R!)
+        # re-check availability
         genes_available, missing = check_genes_availability(dataset_prefix, requested_genes, bucket_name=None, force_s3=True)
 
         # now ALL missing genes should exist → safest to use requested_genes directly
@@ -592,11 +592,11 @@ def register_callbacks(app):
             violin_src, _ = generate_violin_plot_from_df(data_gex, color_map, final_genes)
             dot_src, _ = generate_dot_plot_from_df(data_pert, data_gex, color_map, final_genes, clusters_to_filter)
 
-            msg = f"✅ New genes added for {dataset_prefix}. Plots updated."
+            msg = f"New genes added for {dataset_prefix}. Plots updated."
 
         except Exception as e:
-            log_progress(f"❌ Auto-refresh error: {e}")
-            return "", "", "", "", f"⚠️ Auto-refresh failed: {e}", True
+            log_progress(f"Auto-refresh error: {e}")
+            return "", "", "", "", f"Auto-refresh failed: {e}", True
 
         # After successful refresh, reset flag
         set_refresh_flag(dataset_prefix, "idle")

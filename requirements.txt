@@ -1,4 +1,4 @@
-# --- Core Server (CRITICAL) ---
+# --- Core Server ---
 gunicorn
 dash
 dash-bootstrap-components

@@ -67,7 +67,6 @@ def generate_umap_plot(dataset_prefix, status="All", title="", clusters=None, su
                 plot_df <- plot_df %>% filter(Subject %in% selected_subjects)
             }}
 
-
             if (nrow(plot_df) == 0) {{
                 p <- ggplot() + annotate("text", x=0, y=0, label="No data for selection") + theme_void()
             }} else {{

@@ -31,8 +31,8 @@ def ensure_visium_data_exists():
 
     # Check existence
     if not os.path.exists(full_local_path):
-        print(f"📦 Visium Data missing: {DATA_RELATIVE_PATH}")
-        print("🔄 Downloading from S3...")
+        print(f"Visium Data missing: {DATA_RELATIVE_PATH}")
+        print("Downloading from S3...")
         start_ts = time.time()
 
         try:
@@ -46,29 +46,28 @@ def ensure_visium_data_exists():
             
             bucket_name = urlparse(bucket_uri).netloc
             
-            # Construct S3 Key (Assumes repo structure matches S3 structure)
+            # Construct S3 Key
             s3_key = f"Joe/HSV_Dashboard_py/{DATA_RELATIVE_PATH}"
 
             # Download
             s3 = boto3.client('s3')
             s3.download_file(bucket_name, s3_key, full_local_path)
             
-            print(f"✅ Download complete in {time.time() - start_ts:.2f}s")
+            print(f"Download complete in {time.time() - start_ts:.2f}s")
 
         except Exception as e:
-            # If we can't get the data, the app can't function. Raise critical error.
+            # If we can't get the data, Raise critical error.
             raise FileNotFoundError(f"CRITICAL: Could not download Visium RData from S3. {e}")
 
-    # Return path with forward slashes (Required for R on Windows/Linux)
+    # Return path with forward slashes
     return full_local_path.replace("\\", "/")
 
 # --- 2. INITIALIZE R ENVIRONMENT ---
-
-# Get the valid data path (Trigger download if needed)
+# Get the valid data path
 try:
     R_DATA_PATH = ensure_visium_data_exists()
 except Exception as e:
-    print(f"❌ Error initializing Spatial Data: {e}")
+    print(f"Error initializing Spatial Data: {e}")
     R_DATA_PATH = None
 
 # Load necessary R libraries
@@ -106,7 +105,6 @@ if R_DATA_PATH:
 
     # Create the set of uppercase names for fast, case-insensitive validation
     AVAILABLE_GENES_UPPER = set(UPPER_TO_ORIGINAL_CASE_MAP.keys())
-    # print(f"Validation enabled. {len(AVAILABLE_GENES_UPPER)} genes available from SCT assay.")
 
     # Define the theme once in the global R environment
     ro.r("""
@@ -133,13 +131,9 @@ def run_r_spatial_gene(gene_names_str):
     Handles single or multiple comma-separated genes.
     """
     if not gene_names_str:
-        return html.Div("⚠️ Please enter at least one gene name.", style={"color": "red"}), False
+        return html.Div("Please enter at least one gene name.", style={"color": "red"}), False
 
     # Make input case-insensitive and validate against available genes
-    # input_genes = [gene for gene in re.split(r'[\s,;]+', gene_names_str) if gene]
-    # input_genes_upper = {gene.strip().upper() for gene in input_genes}
-    # valid_genes_upper = sorted(list(input_genes_upper.intersection(AVAILABLE_GENES_UPPER)))
-    # invalid_genes_upper = sorted(list(input_genes_upper.difference(AVAILABLE_GENES_UPPER)))
     # Split & clean
     input_genes = [gene.strip() for gene in re.split(r'[\s,;]+', gene_names_str) if gene.strip()]
 
@@ -155,7 +149,7 @@ def run_r_spatial_gene(gene_names_str):
             invalid_genes_upper.append(g_up)
 
     if not valid_genes_original_case:
-        error_msg = f"❌ Error: None of the entered genes were found. Invalid: {', '.join(invalid_genes_upper)}"
+        error_msg = f"Error: None of the entered genes were found. Invalid: {', '.join(invalid_genes_upper)}"
         return html.Pre(error_msg), False
 
     # Convert valid genes back to their ORIGINAL case for R
@@ -201,7 +195,7 @@ def run_r_spatial_gene(gene_names_str):
         # Check for the special message from R
         if output_path == "NO_PLOTTABLE_GENES":
             unplottable = ', '.join(set(valid_genes_original_case))
-            error_msg = f"❌ Error: The gene(s) '{unplottable}' exist but have no expression data to plot."
+            error_msg = f"Error: The gene(s) '{unplottable}' exist but have no expression data to plot."
             return html.Pre(error_msg), False
 
         # proceed with creating the image
@@ -225,4 +219,4 @@ def run_r_spatial_gene(gene_names_str):
     except Exception:
         import traceback
         error_details = traceback.format_exc()
-        return html.Pre(f"❌ An error occurred during R execution:\n\n{error_details}"), False
+        return html.Pre(f"An error occurred during R execution:\n\n{error_details}"), False

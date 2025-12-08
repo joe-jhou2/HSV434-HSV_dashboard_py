@@ -15,22 +15,22 @@ from utils.run_r_cluster_perSubject import generate_PerSubject_StackBar_plots
 load_dotenv()
 
 # --- Data Caching ---
-DATA_CACHE = {}
 s3_client = boto3.client('s3')
+OPTIONS_CACHE = {} # Cache for dropdown options (clusters, subjects)
 
 def get_dataset_options(dataset_prefix, bucket_name=None, force_s3=False):
     """Loads a dataset into the cache and returns its unique clusters and subjects."""
     # 0. Check Cache First (Fast return)
-    if dataset_prefix in DATA_CACHE and not force_s3:
-        return DATA_CACHE[dataset_prefix]
+    if dataset_prefix in OPTIONS_CACHE and not force_s3:
+        return OPTIONS_CACHE[dataset_prefix]
     
     # 1. Load Bucket from Env if not provided
     if not bucket_name:
         bucket_name = os.getenv("S3_BUCKET_URI")
     
     if not bucket_name:
-        print("❌ Error: S3_BUCKET_URI not set in .env or passed as argument.")
-        return []
+        print("Error: S3_BUCKET_URI not set in .env or passed as argument.")
+        return {"clusters": [], "subjects": []}
     
     # 2. Construct paths
     s3_key = f"Joe/HSV_Dashboard_py/DataWarehouse/UMAP/{dataset_prefix}_umap_data.parquet"
@@ -39,39 +39,33 @@ def get_dataset_options(dataset_prefix, bucket_name=None, force_s3=False):
     df = None
 
     try:
-            # 3. Logic Branch: Local vs S3
-            if not force_s3 and os.path.exists(local_path):
-                # Option A: Local File
-                # print(f"📂 Loading UMAP options from LOCAL: {local_path}")
-                df = pd.read_parquet(local_path)
-            
-            else:
-                # Option B: S3 Datalake
-                # Clean the bucket name
-                if bucket_name.startswith("s3://"):
-                    bucket_name = urlparse(bucket_name).netloc
+        # 3. Logic Branch: Local vs S3
+        if not force_s3 and os.path.exists(local_path):
+            df = pd.read_parquet(local_path)
+        # 4. Load from S3
+        else:
+            # Clean the bucket name
+            if bucket_name.startswith("s3://"):
+                bucket_name = urlparse(bucket_name).netloc
 
-                print(f"☁️ Loading UMAP options from S3: {bucket_name}/{s3_key}")
+            print(f"Loading UMAP options from S3: {bucket_name}/{s3_key}")
                 
-                obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
-                # Read bytes into memory for Pandas
-                df = pd.read_parquet(BytesIO(obj['Body'].read()))
+            obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+            df = pd.read_parquet(BytesIO(obj['Body'].read()))
 
-            # 4. Process and Cache
-            if df is not None:
-                options = {
-                    "clusters": sorted(df['CellType_Level3'].unique()),
-                    "subjects": sorted(df['Subject'].unique())
-                }
-                # Update the global cache
-                DATA_CACHE[dataset_prefix] = options
-                return options
+        # 5. Process and Cache
+        if df is not None:
+            OPTIONS_CACHE[dataset_prefix] = {
+                "clusters": sorted(df['CellType_Level3'].unique()),
+                "subjects": sorted(df['Subject'].unique())
+            }
+            return OPTIONS_CACHE[dataset_prefix]
 
     except Exception as e:
-            print(f"❌ Error loading dataset options for {dataset_prefix}: {e}")
+            print(f"Error loading dataset options for {dataset_prefix}: {e}")
             return {"clusters": [], "subjects": []}
 
-    return {"clusters": [], "subjects": []}
+    return OPTIONS_CACHE[dataset_prefix]
 
 cluster_tab_layout = html.Div([
     html.H4("Cluster Discovery Controls"),
@@ -93,7 +87,7 @@ cluster_tab_layout = html.Div([
         
         # 1. UMAP Plots Sub-Tab
         dcc.Tab(label="UMAP Plots", value="umap-sub-tab", className="umap-sub-tab", children=[
-            html.Div(className="py-4", children=[ # Add padding for spacing
+            html.Div(className="py-4", children=[
                 dcc.Loading(type="circle", children=[
                     dbc.Row([
                         dbc.Col(html.Img(id="cluster-umap-all-img", className="img-fluid"), width=6, className="mx-auto")
@@ -144,7 +138,7 @@ def register_callbacks(app):
     def update_dropdown_options(dataset_prefix):
         if not dataset_prefix:
             return [], [], [], []
-        options = get_dataset_options(dataset_prefix, force_s3=True)
+        options = get_dataset_options(dataset_prefix, bucket_name=None, force_s3=True)
         
         # Prepend 'All' to the lists of options
         cluster_options = ['All'] + options["clusters"]

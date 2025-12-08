@@ -7,10 +7,8 @@ from rpy2.robjects.conversion import localconverter
 
 def generate_PerSubject_StackBar_plots(dataset_prefix, subjects=None):
     """
-    Generates a stacked bar plot (coord_flip) showing cell type proportions
-    per subject, faceted by status.
-    Accepts an optional list of subjects for filtering.
-    Returns a Base64 image string.
+    Generates a stacked bar plot showing cell type proportions per subject, faceted by status.
+    Accepts an optional list of subjects for filtering. Returns a Base64 image string.
     """
     # Define necessary file paths
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -80,7 +78,6 @@ def generate_PerSubject_StackBar_plots(dataset_prefix, subjects=None):
             if (nrow(expanded_data) == 0) {{
                 p <- ggplot() + annotate("text", x=0.5, y=0.5, label="No data for selection") + theme_void()
             }} else {{
-                # --- Plotting (adapted from your R code) ---
                 p <- ggplot(expanded_data, aes(x = Subject, y = Percentage / 100, fill = CellType)) + # Divide Percentage by 100 for scale_y_continuous
                   geom_col(position = position_fill(reverse = TRUE), color = "black", linewidth = 0.2) + # Use linewidth
                   scale_y_continuous(labels = scales::percent) +

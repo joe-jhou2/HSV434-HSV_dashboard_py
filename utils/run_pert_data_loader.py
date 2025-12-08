@@ -10,10 +10,11 @@ import boto3
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 from utils.db_connection import configure_duckdb_s3
-# from utils.db_connection import get_duckdb
 
 # Load env
 load_dotenv()
+
+# Initialize S3 client
 s3_client = boto3.client('s3')
 
 # --- Key Columns for this dataset ---
@@ -33,8 +34,6 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
     """
     Loads and JOINS filtered Pert data from multiple Parquet files
     using DuckDB and a 'core' file as the base.
-    
-    This script joins on a composite key: (Subject, CellType_Level3, Status)
     """
     # Start timing
     start_time = time.time()
@@ -62,7 +61,7 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
 
     # Determine if we should use local files or S3
     if not force_s3 and os.path.exists(local_core_path):
-        print(f"📂 Using LOCAL Pert files from: {local_pert_dir}")
+        print(f"Using LOCAL Pert files from: {local_pert_dir}")
         use_s3 = False
         core_path = local_core_path
 
@@ -79,10 +78,10 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
     else:
         # Use S3
         if not actual_bucket:
-             print("❌ Error: No local file and S3_BUCKET_URI is missing.")
+             print("Error: No local file and S3_BUCKET_URI is missing.")
              return pd.DataFrame(), {}
 
-        print(f"☁️ Using S3 Pert files from bucket: {actual_bucket}")
+        print(f"Using S3 Pert files from bucket: {actual_bucket}")
         use_s3 = True
 
         # S3: Core file path
@@ -99,7 +98,7 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
             ext_files = [key for key in all_files if key != core_key]
 
         except Exception as e:
-            print(f"❌ Error listing S3 files: {e}")
+            print(f"Error listing S3 files: {e}")
             return pd.DataFrame(), {}
             
         # S3: Load Colors
@@ -108,7 +107,7 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
             obj = s3_client.get_object(Bucket=actual_bucket, Key=color_key)
             color_map = json.loads(obj['Body'].read().decode('utf-8'))
         except Exception as e:
-            print(f"❌ Error loading color file from S3: {e}")
+            print(f"Error loading color file from S3: {e}")
 
     # --- 2. Get Core Schema (to identify duplicate columns) ---
     # Connect to an in-memory DuckDB instance
@@ -127,12 +126,11 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
             raise ValueError(f"Core file {os.path.basename(core_path)} is missing one or more keys: {KEY_COLS - core_cols}")
 
     except Exception as e:
-        print(f"❌ Error reading schema for core file {core_path}: {e}")
+        print(f"Error reading schema for core file {core_path}: {e}")
         con.close()
         return pd.DataFrame(), color_map
 
     # --- 3. Dynamically Build the SQL Query ---
-    
     # Base of the query
     from_clause = f"FROM read_parquet('{safe_path(core_path)}') AS core"
     join_clauses = []
@@ -153,7 +151,7 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
             
             # Check for keys
             if not KEY_COLS.issubset(ext_cols):
-                print(f"⚠️ Skipping {os.path.basename(file_path)}: Missing one or more keys.")
+                print(f"Skipping {os.path.basename(file_path)}: Missing one or more keys.")
                 continue
             
             # Find all potential new gene columns
@@ -164,16 +162,16 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
                 # If user specified genes, only join if this file has one of them
                 cols_to_join = potential_new_cols.intersection(gene_list)
                 if not cols_to_join:
-                    print(f"ℹ️ Skipping {os.path.basename(file_path)}: No requested genes found.")
+                    print(f"Skipping {os.path.basename(file_path)}: No requested genes found.")
                     continue
             else:
                 # If user did NOT specify genes, join all new columns
                 cols_to_join = potential_new_cols
                 if not cols_to_join:
-                    print(f"ℹ️ Skipping {os.path.basename(file_path)}: No new columns found.")
+                    print(f"Skipping {os.path.basename(file_path)}: No new columns found.")
                     continue
             
-            print(f"   └─ Joining {os.path.basename(file_path)} (alias {alias}) for {len(cols_to_join)} columns.")
+            print(f"Joining {os.path.basename(file_path)} (alias {alias}) for {len(cols_to_join)} columns.")
 
             # Update maps for the columns we're joining
             for col in cols_to_join:
@@ -188,19 +186,18 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
             )
 
         except Exception as e:
-            print(f"❌ Error processing file {os.path.basename(file_path)} (alias {alias}): {e}")
+            print(f"Error processing file {os.path.basename(file_path)} (alias {alias}): {e}")
             continue
 
     # --- 4. Build the final SELECT and WHERE clauses ---
-    
-    # Define the "metadata" columns we always want (these are also the keys)
+    # Define the "metadata" columns
     required_cols = {"Subject", "CellType_Level3", "Status"}
     
     cols_to_select = set(required_cols)
     if genes:
         cols_to_select.update(gene_list)
     else:
-        # If no genes specified, select ALL available columns we've found
+        # If no genes specified, select ALL available columns
         cols_to_select.update(col_to_table_map.keys())
 
     # Build the final SELECT list, using the correct table alias
@@ -216,7 +213,7 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
                 missing_cols.add(col)
 
     if missing_cols:
-        print(f"⚠️ Warning: Requested genes not found in any file: {missing_cols}")
+        print(f"Warning: Requested genes not found in any file: {missing_cols}")
 
     # Build WHERE clause (filtering on the 'core' table's metadata)
     where_clauses = ["1=1"]
@@ -243,12 +240,12 @@ def load_filtered_pert_data(dataset_prefix, genes=None, clusters=None, subjects=
     
     try:
         df = con.execute(final_sql).df()
-        print(f"✅ Joined {len(join_clauses) + 1} files into {df.shape[0]:,} rows × {df.shape[1]} cols")
+        print(f"Joined {len(join_clauses) + 1} files into {df.shape[0]:,} rows × {df.shape[1]} cols")
         return df, color_map
     except Exception as e:
-        print(f"❌ DuckDB Query Failed: {e}")
+        print(f"DuckDB Query Failed: {e}")
         return pd.DataFrame(), color_map
     finally:
         elapsed_time = time.time() - start_time
-        print(f"⏱️ load_filtered_pert_data() completed in {elapsed_time:.2f} seconds.")
+        print(f"load_filtered_pert_data() completed in {elapsed_time:.2f} seconds.")
         con.close()

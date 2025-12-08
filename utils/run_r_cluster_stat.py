@@ -97,7 +97,7 @@ def generate_clusterStat_plots(dataset_prefix):
         import traceback
         print(f"--- ERROR generating cluster statistics plots for dataset: {dataset_prefix} ---")
         print(traceback.format_exc())
-        # Return path to an error placeholder image if you have one
+        # Return path to an error placeholder image
         return "/assets/error_placeholder.png"
     finally:
         # Ensure the temporary file is always removed

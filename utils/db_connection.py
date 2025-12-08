@@ -20,7 +20,7 @@ def configure_duckdb_s3(con):
     This ensures DuckDB works exactly like Boto3 (Local & ECS).
     """
     try:
-        # 1. Install httpfs (Required for S3)
+        # 1. Install httpfs for S3
         con.execute("INSTALL httpfs; LOAD httpfs;")
         
         # 2. Fetch fresh credentials from Boto3
@@ -30,7 +30,7 @@ def configure_duckdb_s3(con):
         region = session.region_name or os.getenv("AWS_DEFAULT_REGION", "us-west-2")
 
         if not creds:
-            print("⚠️ Warning: No AWS credentials found via Boto3.")
+            print("Warning: No AWS credentials found via Boto3.")
             return
 
         # Force Boto3 to refresh if creds are almost expired
@@ -45,7 +45,7 @@ def configure_duckdb_s3(con):
             con.execute(f"SET s3_session_token='{creds.token}';")
 
     except Exception as e:
-        print(f"❌ Failed to configure DuckDB S3: {e}")
+        print(f"Failed to configure DuckDB S3: {e}")
 
 def dict_to_r_vector(py_dict):
     """

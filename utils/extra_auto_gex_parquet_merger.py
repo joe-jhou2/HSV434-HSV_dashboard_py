@@ -26,12 +26,12 @@ def merge_gex_files_duckdb(prefix):
     Merge all parquet files for a dataset into a single core parquet
     using DuckDB for memory-efficient out-of-core merging.
     """
-    log(f"--- 🔍 Checking {prefix} with DuckDB ---")
+    log(f"--- Checking {prefix} with DuckDB ---")
     
     # --- 1. Identify Core File ---
     core_path = os.path.join(DATA_PATH, f"{prefix}_gex_core.parquet")
     if not os.path.exists(core_path):
-        log(f"⚠️ No core file found for {prefix}. Skipping.")
+        log(f"No core file found for {prefix}. Skipping.")
         return
 
     # --- 2. Find all *other* parquet files ---
@@ -42,7 +42,7 @@ def merge_gex_files_duckdb(prefix):
     ]
 
     if not ext_files:
-        log(f"ℹ️ No new parquet files found for {prefix}.")
+        log(f"No new parquet files found for {prefix}.")
         return
 
     # Connect to an in-memory DuckDB
@@ -55,7 +55,7 @@ def merge_gex_files_duckdb(prefix):
         # Get core columns to identify what's "new"
         core_schema_df = con.execute("DESCRIBE core").df()
         core_cols = set(core_schema_df['column_name'])
-        log(f"📖 Core file loaded ({len(core_cols)} cols). Checking {len(ext_files)} extension files...")
+        log(f"Core file loaded ({len(core_cols)} cols). Checking {len(ext_files)} extension files...")
 
         join_clauses_sql = []
         all_new_cols_sql = []
@@ -69,14 +69,14 @@ def merge_gex_files_duckdb(prefix):
                 ext_cols = set(ext_schema_df['column_name'])
 
                 if "Barcode" not in ext_cols:
-                    log(f"⚠️ Skipping {os.path.basename(f_path)} — missing Barcode column.")
+                    log(f"Skipping {os.path.basename(f_path)} — missing Barcode column.")
                     continue
                 
                 # Find only columns that are NOT in the core file
                 new_cols = [c for c in ext_cols if c not in core_cols and c != 'Barcode']
 
                 if not new_cols:
-                    log(f"ℹ️ {os.path.basename(f_path)}: No new gene columns. Marking for cleanup.")
+                    log(f"{os.path.basename(f_path)}: No new gene columns. Marking for cleanup.")
                     files_merged_successfully.append(f_path) # Mark for deletion even if no new cols
                     continue
 
@@ -90,26 +90,25 @@ def merge_gex_files_duckdb(prefix):
                 
                 # If we get here, the file is good to merge and delete
                 files_merged_successfully.append(f_path)
-                log(f"   └─ Adding {len(new_cols)} new columns from {os.path.basename(f_path)}")
+                log(f"Adding {len(new_cols)} new columns from {os.path.basename(f_path)}")
 
             except Exception as e:
-                log(f"💥 Error inspecting {os.path.basename(f_path)}: {e}")
+                log(f"Error inspecting {os.path.basename(f_path)}: {e}")
         
         if not all_new_cols_sql:
-            log(f"ℹ️ No new columns found in any files for {prefix}.")
+            log(f"No new columns found in any files for {prefix}.")
             # We still run cleanup for any files that had no new columns
             if files_merged_successfully:
-                log("--- 🧹 Cleaning up processed files ---")
+                log("--- Cleaning up processed files ---")
                 for f in files_merged_successfully:
                     try:
                         os.remove(f)
-                        log(f"   └─ Deleted {os.path.basename(f)}")
+                        log(f"Deleted {os.path.basename(f)}")
                     except Exception as e:
-                        log(f"   ⚠️ Failed to delete {os.path.basename(f)}: {e}")
+                        log(f"Failed to delete {os.path.basename(f)}: {e}")
             return
 
         # --- 4. Execute the merge to a temporary file ---
-        # This is safer. We write to a .tmp file first.
         temp_output_path = core_path + ".tmp"
         
         final_select_sql = "core.*, " + ", ".join(all_new_cols_sql)
@@ -122,30 +121,29 @@ def merge_gex_files_duckdb(prefix):
         ) TO '{safe_path(temp_output_path)}' (FORMAT 'parquet', CODEC 'zstd');
         """
         
-        log(f"🚀 Executing merge query for {len(files_merged_successfully)} files...")
+        log(f"Executing merge query for {len(files_merged_successfully)} files...")
         con.execute(query)
         con.close() # Release the connection
 
         # --- 5. Atomic Replace and Cleanup ---
-        # If SQL succeeds, atomically replace the old core file with the new one
         os.replace(temp_output_path, core_path)
-        log(f"✅ Successfully saved new core file: {os.path.basename(core_path)}")
+        log(f"Successfully saved new core file: {os.path.basename(core_path)}")
 
-        log("--- 🧹 Cleaning up merged files ---")
+        log("--- Cleaning up merged files ---")
         for f in files_merged_successfully:
             try:
                 os.remove(f)
-                log(f"   └─ Deleted {os.path.basename(f)}")
+                log(f"Deleted {os.path.basename(f)}")
             except Exception as e:
-                log(f"   ⚠️ Failed to delete {os.path.basename(f)}: {e}")
+                log(f"Failed to delete {os.path.basename(f)}: {e}")
 
     except Exception as e:
-        log(f"💥💥 CRITICAL MERGE FAILED for {prefix}: {e}")
+        log(f"CRITICAL MERGE FAILED for {prefix}: {e}")
         con.close()
         # Clean up the temp file if it exists
         if os.path.exists(temp_output_path):
             os.remove(temp_output_path)
-            log("   └─ Cleaned up temp file. Core file is untouched.")
+            log("Cleaned up temp file. Core file is untouched.")
 
 def daily_merge():
     log("--- Daily GEX Merge Job STARTING---")
@@ -156,16 +154,7 @@ def daily_merge():
             log(f"Unhandled error for {prefix}: {e}")
     log("---Daily GEX Merge Job FINISHED---")
 
-# --- Scheduler setup ---
-# schedule.every().day.at("00:00").do(daily_merge)
-# log("⏰ Scheduler started. Running daily at 00:00 (midnight)...")
-
 # --- For testing, run it once immediately ---
 log("Running one-time merge for testing...")
 daily_merge()
 log("Test run complete.")
-
-# --- Main loop ---
-# while True:
-#     schedule.run_pending()
-#     time.sleep(60)

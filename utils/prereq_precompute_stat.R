@@ -10,7 +10,7 @@ suppressPackageStartupMessages({
 
 # --- 1. Core Calculation Function (Your original code) ---
 precompute_computeStat <- function(seurat_object){
-  cat("   Calculating summaries...\n")
+  cat("Calculating summaries...\n")
   # Summary1
   Summary_perSubject_perStatus <- as.data.frame(seurat_object@meta.data %>%
                                                   group_by(.data$Subject,
@@ -82,7 +82,7 @@ precompute_computeStat <- function(seurat_object){
     dplyr::select(-.data$Total_Cells) %>%
     as.data.frame()
 
-  cat("   Summaries calculated.\n")
+  cat("Summaries calculated.\n")
   return(list(Summary_perSubject_perStatus = Summary_perSubject_perStatus,
               Summary_cluster_per_sample = Summary_cluster_per_sample,
               Summary_cluster_per_status = Summary_cluster_per_status))
@@ -95,16 +95,16 @@ process_and_save_stats <- function(seurat_rdata_path,
   cat(paste("--- Processing stats for:", output_prefix, "---\n"))
 
   # Load the Seurat object
-  cat(paste("   Loading Seurat object from:", seurat_rdata_path, "\n"))
+  cat(paste("Loading Seurat object from:", seurat_rdata_path, "\n"))
   load(seurat_rdata_path)
   seurat_obj <- get(seurat_object_name)
-  cat(paste("   Object", seurat_object_name, "loaded.\n"))
+  cat(paste("Object", seurat_object_name, "loaded.\n"))
 
   # Compute the statistics
   stats_list <- precompute_computeStat(seurat_obj)
 
   # Save each summary to its own Parquet file
-  cat("   Saving results to Parquet files...\n")
+  cat("Saving results to Parquet files...\n")
   output_stats_subj_status_path <- file.path("DataWarehouse/Stat",
                                              paste0(output_prefix,
                                               "_stats_subject_status.parquet"))
@@ -112,7 +112,7 @@ process_and_save_stats <- function(seurat_rdata_path,
   arrow::write_parquet(stats_list$Summary_perSubject_perStatus,
                        output_stats_subj_status_path)
 
-  cat(paste("   ✅ Saved Subject/Status stats to",
+  cat(paste("Saved Subject/Status stats to",
             output_stats_subj_status_path, "\n"))
 
   output_stats_clust_sample_path <- file.path("DataWarehouse/Stat",
@@ -122,7 +122,7 @@ process_and_save_stats <- function(seurat_rdata_path,
   arrow::write_parquet(stats_list$Summary_cluster_per_sample,
                        output_stats_clust_sample_path)
 
-  cat(paste("   ✅ Saved Cluster/Sample stats to",
+  cat(paste("Saved Cluster/Sample stats to",
             output_stats_clust_sample_path, "\n"))
 
   output_stats_clust_status_path <- file.path("DataWarehouse/Stat",
@@ -132,7 +132,7 @@ process_and_save_stats <- function(seurat_rdata_path,
   arrow::write_parquet(stats_list$Summary_cluster_per_status,
                        output_stats_clust_status_path)
 
-  cat(paste("   ✅ Saved Cluster/Status stats to",
+  cat(paste("Saved Cluster/Status stats to",
             output_stats_clust_status_path, "\n"))
 
   cat(paste("--- Finished processing stats for", output_prefix, "---\n\n"))

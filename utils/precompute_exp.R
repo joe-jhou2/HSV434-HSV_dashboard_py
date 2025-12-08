@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
   library(arrow)
   library(jsonlite)
   library(stringr) # For matches()
-  library(Matrix) # For handling sparse matrices, if needed
+  library(Matrix) # For handling sparse matrices
 })
 
 # Help function to calculate feature gene percentage
@@ -69,7 +69,7 @@ process_exp_data <- function(seurat_rdata_path,
   cat(paste("--- Processing expression data for:", output_prefix, "---\n"))
 
   # --- Load Data ---
-  cat("   Loading RData files...\n")
+  cat("Loading RData files...\n")
   env <- new.env()
   load(seurat_rdata_path, envir = env)
   seurat_obj <- env[[seurat_object_name]]
@@ -87,7 +87,7 @@ process_exp_data <- function(seurat_rdata_path,
   dir.create(pert_dir, recursive = TRUE, showWarnings = FALSE)
 
   # --- Extract UMAP & Metadata ---
-  cat("   Extracting UMAP coordinates and metadata...\n")
+  cat("Extracting UMAP coordinates and metadata...\n")
   umap_coords <- as.data.frame(seurat_obj@reductions$umap@cell.embeddings) %>%
     rename_with(~"UMAP_1", matches("^umap_?1$", ignore.case = TRUE)) %>%
     rename_with(~"UMAP_2", matches("^umap_?2$", ignore.case = TRUE))
@@ -131,7 +131,7 @@ process_exp_data <- function(seurat_rdata_path,
       }
 
       if (length(invalid_genes) > 0) {
-        cat(paste("   ⚠️ WARNING: Genes not found:",
+        cat(paste("WARNING: Genes not found:",
                   paste(invalid_genes, collapse = ", "), "\n"))
       }
       genes_to_fetch <- valid_genes
@@ -145,17 +145,17 @@ process_exp_data <- function(seurat_rdata_path,
 
     expression_data_df <- rna_data
 
-    cat(paste("   Successfully prepared expression data for",
+    cat(paste("Successfully prepared expression data for",
               ncol(rna_data) - 1, "genes.\n"))
 
   }, error = function(e) {
-    cat(paste("   ⚠️ ERROR during expression extraction:", e$message, "\n"))
+    cat(paste("ERROR during expression extraction:", e$message, "\n"))
     # If expression extraction fails, we proceed without it for this file
-    cat("   Proceeding without expression data for this combined file.\n")
+    cat("Proceeding without expression data for this combined file.\n")
   })
 
   # --- Combine Metadata, UMAP, and (if available) Expression Data ---
-  cat("   Combining extracted data...\n")
+  cat("Combining extracted data...\n")
 
   combined_df <- metadata %>%
     left_join(umap_coords %>% rownames_to_column("Barcode"), by = "Barcode")
@@ -172,12 +172,12 @@ process_exp_data <- function(seurat_rdata_path,
   )
 
   # --- Save to Parquet and Update Gene Index ---
-  cat("   Saving data and updating index...\n")
+  cat("Saving data and updating index...\n")
 
   # Define output filename (timestamped if on-demand)
   extract_prefix <- Sys.getenv("EXTRACT_PREFIX", unset = "")
   is_dynamic_mode <- nzchar(extract_prefix)
-  cat("   Dynamic mode:", is_dynamic_mode, "\n")
+  cat("Dynamic mode:", is_dynamic_mode, "\n")
 
   if (is_dynamic_mode) {
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
@@ -197,15 +197,15 @@ process_exp_data <- function(seurat_rdata_path,
   pert_output_path <- file.path(pert_dir, pert_output_filename)
 
   # --- Save Combined Data File ---
-  cat(paste("   Saving combined data to Parquet:", gex_output_path, "\n"))
+  cat(paste("Saving combined data to Parquet:", gex_output_path, "\n"))
   arrow::write_parquet(combined_df, gex_output_path)
-  cat("   ✅ Saved combined data successfully.\n")
+  cat("Saved combined data successfully.\n")
 
   # --- Save Gene Percentage Data File ---
-  cat(paste("   Saving Gene Percentage data to Parquet:",
+  cat(paste("Saving Gene Percentage data to Parquet:",
             pert_output_path, "\n"))
   arrow::write_parquet(gene_pert_df, pert_output_path)
-  cat("   ✅ Saved Gene Percentage data successfully.\n")
+  cat("Saved Gene Percentage data successfully.\n")
 
   # --- Update Gene Index JSON ---
   if (!is.null(expression_data_df)) {
@@ -230,9 +230,9 @@ process_exp_data <- function(seurat_rdata_path,
     jsonlite::write_json(merged_genes,
                          output_gene_index_path,
                          auto_unbox = TRUE)
-    cat(paste("   ✅ Updated gene index to:", output_gene_index_path, "\n"))
+    cat(paste("Updated gene index to:", output_gene_index_path, "\n"))
   } else {
-    cat("   ⚠️ No expression data extracted; index not updated.\n")
+    cat("No expression data extracted; index not updated.\n")
   }
   cat(paste("--- Finished processing:", output_prefix, "---\n\n"))
 }

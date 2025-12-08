@@ -28,11 +28,17 @@ DataLake/
 *.csv
 *.json
 
+# --- Deployment --- 
+Dockerfile
+docker-compose.yml
+deploynote/
+
 # --- Temporary/Generated Files ---
 *.png
 assets/temp_*.png
 temp_*.png
 .gitignore
+.dockerignore
 
 # --- Exceptions ---
 !assets/images/demo1.png

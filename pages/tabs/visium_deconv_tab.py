@@ -35,11 +35,11 @@ def register_callbacks(app):
     )
     def update_deconv_plot(n_clicks):
         if not n_clicks:
-            return html.Div("⚠️ Click 'Run Analysis' to generate plots.", style={"color": "gray"})
+            return html.Div("Click 'Run Analysis' to generate plots.", style={"color": "gray"})
 
         try:
             # Call the Python function that generates the figure
             fig = run_r_spatial_deconvo()  # gene_name optional for future use
             return dcc.Graph(figure=fig)
         except Exception as e:
-            return html.Pre(f"❌ Error generating deconvolution plot:\n{e}")
+            return html.Pre(f"Error generating deconvolution plot:\n{e}")

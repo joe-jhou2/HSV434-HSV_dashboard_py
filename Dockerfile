@@ -1,27 +1,29 @@
-# Use an official Python runtime as a parent image
+# Use Python 3.10 slim
 FROM python:3.10-slim
 
 # 1. Install System Dependencies
-# Added: libdeflate-dev, liblzma-dev, libzstd-dev, libbz2-dev, libtirpc-dev
-# These are required to compile rpy2 against the R runtime
+# Added: pkg-config (CRITICAL FIX for rpy2 compilation)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     r-base \
     build-essential \
-    libxml2-dev \
+    cmake \
+    git \
+    pkg-config \
+    gfortran \
+    libblas-dev \
+    liblapack-dev \
     libssl-dev \
     libcurl4-openssl-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libxt-dev \
-    libhdf5-dev \
+    libxml2-dev \
     libglpk-dev \
+    libgmp-dev \
+    libmpfr-dev \
     libharfbuzz-dev \
     libfribidi-dev \
     libfontconfig1-dev \
     libjpeg-dev \
     libpng-dev \
-    cmake \
-    git \
+    libtiff-dev \
     libdeflate-dev \
     liblzma-dev \
     libzstd-dev \
@@ -33,31 +35,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 3. Install Python Dependencies
+# We upgrade pip/setuptools first to ensure wheel building works for rpy2
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
-# 4. Install R Dependencies (Split into steps to prevent memory crashes)
+# 4. Install R Dependencies (Sequential Order)
 
-# Step 4A: Install BiocManager and Bioconductor packages
+# Step A: Bioconductor (ComplexHeatmap)
 RUN R -e "install.packages('BiocManager', repos='http://cran.rstudio.com/'); \
           BiocManager::install('ComplexHeatmap', ask=FALSE, update=FALSE)"
 
-# Step 4B: Install Heavy CRAN Packages (Seurat, Arrow)
-RUN R -e "Sys.setenv(NOT_CRAN='true'); install.packages(c('arrow', 'Seurat'), repos='http://cran.rstudio.com/')"
+# Step B: SeuratObject (Must be installed BEFORE Seurat)
+RUN R -e "install.packages('SeuratObject', repos='http://cran.rstudio.com/')"
 
-# Step 4C: Install Remaining Visualization & Utility Packages
+# Step C: Seurat (The heavy lifter)
+RUN R -e "install.packages('Seurat', repos='http://cran.rstudio.com/')"
+
+# Step D: Arrow & Data Wrangling
+RUN R -e "Sys.setenv(NOT_CRAN='true'); install.packages('arrow', repos='http://cran.rstudio.com/')"
+
+# Step E: Visualization & Utilities
 RUN R -e "install.packages(c( \
     'dplyr', 'tibble', 'jsonlite', 'stringr', 'Matrix', 'tidyr', \
     'ggplot2', 'forcats', 'patchwork', 'reshape2', 'ggh4x', \
     'duckdb', 'glue', 'RColorBrewer', 'circlize', 'ragg', \
-    'scales', 'data.table', 'svglite', 'SeuratObject', 'sp', 'cowplot' \
+    'scales', 'data.table', 'svglite', 'sp', 'cowplot' \
     ), repos='http://cran.rstudio.com/')"
 
-# 5. Copy the rest of the application code
+# 5. Copy Application Code
 COPY . .
 
-# 6. Expose the port
+# 6. Run Configuration
 EXPOSE 8050
-
-# 7. Define the command to run the app
 CMD ["gunicorn", "--bind", "0.0.0.0:8050", "app:server", "--workers", "4", "--timeout", "300"]

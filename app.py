@@ -8,12 +8,11 @@ from pages.tabs import scrnaseq_gene_tab
 from pages.tabs import visium_spatial_tab
 from pages.tabs import visium_deconv_tab
 
-# from apscheduler.schedulers.background import BackgroundScheduler
-# from utils.auto_gex_parquet_merger import daily_merge
-
 # ----------------------------------------
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
            suppress_callback_exceptions=True)
+
+server = app.server
 
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
@@ -37,23 +36,6 @@ def display_page(pathname):
     else:
         return html.H3("404: Page not found")
 
-# --- Logging setup ---
-# LOG_DIR = "DataWarehouse/logs"
-# os.makedirs(LOG_DIR, exist_ok=True)
-# LOG_FILE = os.path.join(LOG_DIR, "scheduler.log")
-
-# def scheduler_log(msg):
-#     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#     line = f"[{ts}] {msg}"
-#     print(line)
-#     with open(LOG_FILE, "a") as f:
-#         f.write(line + "\n")
-
 # ----------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
-    # Start scheduler AFTER Dash server
-    # scheduler = BackgroundScheduler()
-    # scheduler.add_job(daily_merge, 'cron', hour=0, minute=0, next_run_time=datetime.now() + timedelta(days=1))
-    # scheduler.start()
-    # scheduler_log("🕒 Scheduler started — daily_merge runs every day at 00:00 (midnight).")

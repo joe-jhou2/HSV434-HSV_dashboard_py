@@ -63,7 +63,7 @@ def generate_heatmap_from_df(df, color_file, selected_features):
 
                 selectedFeature = selected_features_r
                 if (length(selectedFeature) == 0) {{
-                    stop("❌ No selected features provided from Python.")
+                    stop("No selected features provided from Python.")
                 }}
 
                 # --- Generate Heatmap ---
@@ -95,7 +95,6 @@ def generate_heatmap_from_df(df, color_file, selected_features):
                                                                     Status = c("Prior" = "#0F9D58",  "Lesion" = "#DB4437", "Post" = "#F4B400")))
                 
                 # Create a color mapping for the heatmap
-                # c(min(ht_data), max(ht_data))
                 col_fun = colorRamp2(c(0, 0.01, 7), c("gray","blue", "red"))
                 ht_opt$message = FALSE
                 

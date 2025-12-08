@@ -12,12 +12,13 @@ from utils.db_connection import configure_duckdb_s3
 
 # Load env
 load_dotenv()
+
+# Initialize S3 client
 s3_client = boto3.client('s3')
 
 def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=None, bucket_name=None, force_s3=False):
     """
-    Load AND JOIN filtered GEX data from multiple Parquet files
-    using pure Python and DuckDB.
+    Load AND JOIN filtered GEX data from multiple Parquet files using pure Python and DuckDB.
     """
     # Start timing
     start_time = time.time()
@@ -45,7 +46,7 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
 
     # Determine if we should use local files or S3
     if not force_s3 and os.path.exists(local_core_path):
-        print(f"📂 Using LOCAL GEX files from: {local_gex_dir}")
+        print(f"Using LOCAL GEX files from: {local_gex_dir}")
         use_s3 = False
         core_path = local_core_path
 
@@ -62,10 +63,10 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
     else:
         # Use S3
         if not actual_bucket:
-             print("❌ Error: No local file and S3_BUCKET_URI is missing.")
+             print("Error: No local file and S3_BUCKET_URI is missing.")
              return pd.DataFrame(), {}
 
-        print(f"☁️ Using S3 GEX files from bucket: {actual_bucket}")
+        print(f"Using S3 GEX files from bucket: {actual_bucket}")
         use_s3 = True
 
         # S3: Core file path
@@ -82,7 +83,7 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
             ext_files = [key for key in all_files if key != core_key]
 
         except Exception as e:
-            print(f"❌ Error listing S3 files: {e}")
+            print(f"Error listing S3 files: {e}")
             return pd.DataFrame(), {}
             
         # S3: Load Colors
@@ -91,7 +92,7 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
             obj = s3_client.get_object(Bucket=actual_bucket, Key=color_key)
             color_map = json.loads(obj['Body'].read().decode('utf-8'))
         except Exception as e:
-            print(f"❌ Error loading color file from S3: {e}")
+            print(f"Error loading color file from S3: {e}")
 
     # --- 2. Get Core Schema (to identify duplicate columns) ---
     # Connect to an in-memory DuckDB instance
@@ -105,7 +106,7 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
         core_cols = set(core_schema_df['column_name'])
         print(f"Core file has {len(core_cols)} columns (metadata, genes, etc.)")
     except Exception as e:
-        print(f"❌ Error reading schema for core file {core_path}: {e}")
+        print(f"Error reading schema for core file {core_path}: {e}")
         con.close()
         return pd.DataFrame(), color_map
     
@@ -130,14 +131,14 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
             new_cols = ext_cols - all_seen_cols
             
             if "Barcode" not in ext_cols:
-                print(f"⚠️ Skipping {os.path.basename(file_path)}: No 'Barcode' column.")
+                print(f"Skipping {os.path.basename(file_path)}: No 'Barcode' column.")
                 continue
                 
             if not new_cols:
-                print(f"ℹ️ Skipping {os.path.basename(file_path)}: No new columns found.")
+                print(f"Skipping {os.path.basename(file_path)}: No new columns found.")
                 continue
 
-            print(f"   └─ Joining {os.path.basename(file_path)} (alias {alias}) for {len(new_cols)} new columns.")
+            print(f"Joining {os.path.basename(file_path)} (alias {alias}) for {len(new_cols)} new columns.")
 
             # Add the new columns to our maps
             all_seen_cols.update(new_cols)
@@ -150,11 +151,11 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
             )
 
         except Exception as e:
-            print(f"❌ Error reading schema for {file_path}: {e}")
+            print(f"Error reading schema for {file_path}: {e}")
             continue
 
     # --- 4. Build the final SELECT and WHERE clauses ---
-    # Define the "metadata" columns we always want
+    # Define the "metadata" columns
     required_cols = {"Barcode", "UMAP_1", "UMAP_2", "CellType_Level3", "Subject", "Status"}
     
     # Add the specific genes the user requested
@@ -171,15 +172,14 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
     missing_cols = set()
     for col in cols_to_select:
         if col in col_to_table_map:
-            table_alias = col_to_table_map[col]
-            # Use dot notation: core."UMAP_1", t0."CD3E", etc.
+            table_alias = col_to_table_map[col] 
             final_select_list.append(f'{table_alias}."{col}"')
         else:
-            if col in (gene_list if genes else []): # Only warn for user-requested genes
+            if col in (gene_list if genes else []):
                 missing_cols.add(col)
 
     if missing_cols:
-        print(f"⚠️ Warning: Requested genes not found in any file: {missing_cols}")
+        print(f"Warning: Requested genes not found in any file: {missing_cols}")
 
     # Build WHERE clause (filtering on the 'core' table's metadata)
     where_clauses = ["1=1"]
@@ -206,12 +206,12 @@ def load_filtered_gex_data(dataset_prefix, genes=None, clusters=None, subjects=N
 
     try:
         df = con.execute(final_sql).df()
-        print(f"✅ Joined {len(ext_files) + 1} files into {df.shape[0]:,} rows × {df.shape[1]} cols")
+        print(f"Joined {len(ext_files) + 1} files into {df.shape[0]:,} rows × {df.shape[1]} cols")
         return df, color_map
     except Exception as e:
-        print(f"❌ DuckDB Query Failed: {e}")
+        print(f"DuckDB Query Failed: {e}")
         return pd.DataFrame(), color_map
     finally:
         elapsed_time = time.time() - start_time
-        print(f"⏱️ load_filtered_gex_data() completed in {elapsed_time:.2f} seconds.")
+        print(f"load_filtered_gex_data() completed in {elapsed_time:.2f} seconds.")
         con.close()

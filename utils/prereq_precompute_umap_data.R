@@ -46,7 +46,7 @@ precompute_umap_extract <- function(seurat_rdata_path,
 
   # Save the data using the arrow package (for Parquet)
   arrow::write_parquet(plot_df, output_data_path)
-  cat(paste("✅ Saved UMAP data to", output_data_path, "\n"))
+  cat(paste("Saved UMAP data to", output_data_path, "\n"))
 
   # Save the color object using the jsonlite package
   color_map_as_list <- as.list(color_obj)
@@ -55,7 +55,7 @@ precompute_umap_extract <- function(seurat_rdata_path,
                        auto_unbox = TRUE,
                        pretty = TRUE)
 
-  cat(paste("✅ Saved color map to", output_color_path, "\n"))
+  cat(paste("Saved color map to", output_color_path, "\n"))
 
   cat(paste("--- Finished processing", output_prefix, "---\n\n"))
 }

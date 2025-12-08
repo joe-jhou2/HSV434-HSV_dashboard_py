@@ -8,8 +8,11 @@ import plotly.graph_objects as go
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
+
 # Load env variables
 load_dotenv()
+
+# Initialize s3 cilent
 s3_client = boto3.client('s3')
 
 # -----------------------------------------------------------------------------
@@ -19,7 +22,7 @@ s3_client = boto3.client('s3')
 DATA_FILE = "DataWarehouse/Visium/Data__Visium_Deconvolution_Interactive.Rdata" 
 
 if not os.path.exists(DATA_FILE):
-    print(f"⚠️ Local file missing: {DATA_FILE}. Attempting S3 download...")
+    print(f"Local file missing: {DATA_FILE}. Attempting S3 download...")
     
     # 2. Attempt Download from S3
     try:
@@ -32,17 +35,17 @@ if not os.path.exists(DATA_FILE):
             raise ValueError("S3_BUCKET_URI not set in .env")
             
         bucket_name = urlparse(bucket_uri).netloc
-        # Construct Key: Assumes standard repo structure
+        # Construct Key
         s3_key = f"Joe/HSV_Dashboard_py/{DATA_FILE}"
         
-        print(f"☁️ Downloading from s3://{bucket_name}/{s3_key}...")
+        print(f"Downloading from s3://{bucket_name}/{s3_key}...")
         
         s3 = boto3.client('s3')
         s3.download_file(bucket_name, s3_key, DATA_FILE)
-        print("✅ Download successful.")
+        print("Download successful.")
         
     except Exception as e:
-        print(f"❌ Failed to download S3 file: {e}")
+        print(f"Failed to download S3 file: {e}")
 
 # 3. Final Validation
 if not os.path.exists(DATA_FILE):
@@ -87,7 +90,6 @@ def run_r_spatial_deconvo():
     for idx, row in Res4Plot_A1.iterrows():
         pie_values = row[cell_type_names_A1].values
         pie_labels = cell_type_names_A1
-        # pie_colors = [colors[l] for l in pie_labels]
 
         # Only include non-zero slices
         non_zero_idx = [i for i, v in enumerate(pie_values) if v > 0]
