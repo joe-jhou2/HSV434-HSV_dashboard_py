@@ -1,6 +1,7 @@
 import base64
 import os
 import tempfile
+from utils.s3_utils import load_s3_stats_cluster_status
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
@@ -11,17 +12,12 @@ def generate_clusterStat_plots(dataset_prefix):
     by executing a self-contained R script. Returns a Base64 image string.
     """
     # Define necessary file paths
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     # Only need the cluster_status summary file for these plots
-    stats_file = os.path.join(project_root, "DataWarehouse/Stat", f"{dataset_prefix}_stats_cluster_status.parquet")
+    stats_path = load_s3_stats_cluster_status(dataset_prefix)
 
     # Create a secure, temporary file for the R plot
     tmp_path = ""
     try:
-        # Check if the required stats file exists first
-        if not os.path.exists(stats_file):
-            raise FileNotFoundError(f"Statistics file not found: {stats_file}. Please run pre-computation.")
-
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = tmp.name
 
@@ -35,7 +31,7 @@ def generate_clusterStat_plots(dataset_prefix):
             }})
 
             # Read the pre-computed statistics data
-            Summary_cluster_per_status <- arrow::read_parquet("{stats_file}")
+            Summary_cluster_per_status <- arrow::read_parquet("{stats_path}")
 
             # Define the shared theme
             theme_BarCellType2Status = theme(

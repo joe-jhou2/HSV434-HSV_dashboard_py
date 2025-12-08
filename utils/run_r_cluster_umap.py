@@ -2,7 +2,9 @@
 
 import base64
 import os
+import json
 import tempfile
+from utils.s3_utils import (load_s3_umap, load_s3_colors)
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
@@ -13,9 +15,12 @@ def generate_umap_plot(dataset_prefix, status="All", title="", clusters=None, su
     saves to a temp file, which Python then reads and encodes.
     """
     # Define all necessary file paths
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    data_file = os.path.join(project_root, "DataWarehouse/UMAP", f"{dataset_prefix}_umap_data.parquet")
-    color_file = os.path.join(project_root, "DataWarehouse/Color", f"{dataset_prefix}_colors.json")
+    parquet_path = load_s3_umap(dataset_prefix)
+    json_path = load_s3_colors(dataset_prefix)
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp_color:
+        tmp_color.write(json.dumps(json_path).encode("utf-8"))
+        color_file = tmp_color.name
 
     clusters_r_vector = "NULL"
     if clusters:
@@ -45,7 +50,7 @@ def generate_umap_plot(dataset_prefix, status="All", title="", clusters=None, su
             }})
 
             # Read the data and color files
-            plot_df <- arrow::read_parquet("{data_file}")
+            plot_df <- arrow::read_parquet("{parquet_path}")
             cell_colors <- jsonlite::fromJSON("{color_file}")
 
             # Assign the filter vectors from Python

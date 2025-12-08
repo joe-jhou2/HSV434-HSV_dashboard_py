@@ -1,6 +1,8 @@
 import base64
 import os
 import tempfile
+import json
+from utils.s3_utils import (load_s3_stats_cluster_sample, load_s3_colors)
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
@@ -11,9 +13,12 @@ def generate_PerSubject_StackBar_plots(dataset_prefix, subjects=None):
     Accepts an optional list of subjects for filtering. Returns a Base64 image string.
     """
     # Define necessary file paths
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    stats_file = os.path.join(project_root, "DataWarehouse/Stat", f"{dataset_prefix}_stats_cluster_sample.parquet")
-    color_file = os.path.join(project_root, "DataWarehouse/Color", f"{dataset_prefix}_colors.json")
+    stats_path = load_s3_stats_cluster_sample(dataset_prefix)
+    colors_path = load_s3_colors(dataset_prefix)
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp_color:
+        tmp_color.write(json.dumps(colors_path).encode("utf-8"))
+        color_file = tmp_color.name
 
     # --- Convert selected subjects to an R vector string ---
     subjects_r_vector = "NULL"
@@ -24,12 +29,6 @@ def generate_PerSubject_StackBar_plots(dataset_prefix, subjects=None):
     # Create a secure, temporary file for the R plot
     tmp_path = ""
     try:
-        # Check if required files exist
-        if not os.path.exists(stats_file):
-            raise FileNotFoundError(f"Stats file not found: {stats_file}")
-        if not os.path.exists(color_file):
-            raise FileNotFoundError(f"Color file not found: {color_file}")
-
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = tmp.name
 
@@ -45,7 +44,7 @@ def generate_PerSubject_StackBar_plots(dataset_prefix, subjects=None):
             }})
 
             # Read the pre-computed statistics and colors
-            Summary_cluster_per_sample <- arrow::read_parquet("{stats_file}")
+            Summary_cluster_per_sample <- arrow::read_parquet("{stats_path}")
             CellType_color <- jsonlite::fromJSON("{color_file}")
             selectedSubject <- {subjects_r_vector} # Assign the vector from Python
 
